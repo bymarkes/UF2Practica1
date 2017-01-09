@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Diagnostics;
@@ -11,7 +11,7 @@ namespace UF2Practica1
 	{
 		//Valors constants
 		#region Constants
-		const int nCaixeres = 3;
+		const int nCaixesMax = 7;
 
 		#endregion
 		/* Cua concurrent
@@ -27,11 +27,11 @@ namespace UF2Practica1
 			var clock = new Stopwatch();
 			var threads = new List<Thread>();
 			//Recordeu-vos que el fitxer CSV ha d'estar a la carpeta bin/debug de la solució
-			const string fitxer = "CuaClients.csv";
+			const string arxiu = "CuaClients.csv";
 
 			try
 			{
-				var reader = new StreamReader(File.OpenRead(@fitxer));
+				var reader = new StreamReader(File.OpenRead(@arxiu));
 
 
 				//Carreguem la llista clients
@@ -56,13 +56,22 @@ namespace UF2Practica1
 			clock.Start();
 
 
-			// Instanciar les caixeres i afegir el thread creat a la llista de threads
+            // Instanciar les caixeres i afegir el thread creat a la llista de threads
+
+            for (int i = 0; i < nCaixesMax; i++)
+            {
+                var caixer = new Caixera() { idCaixer = i };
+
+                var fil = new Thread(() => caixer.ProcessarCua());
+
+                fil.Start();
+
+                threads.Add(fil);
+            }
 
 
-
-
-			// Procediment per esperar que acabin tots els threads abans d'acabar
-			foreach (Thread thread in threads)
+            // Procediment per esperar que acabin tots els threads abans d'acabar
+            foreach (Thread thread in threads)
 				thread.Join();
 
 			// Parem el rellotge i mostrem el temps que triga
@@ -76,7 +85,7 @@ namespace UF2Practica1
 	#region ClassCaixera
 	public class Caixera
 	{
-		public int idCaixera
+		public int idCaixer
 		{
 			get;
 			set;
@@ -84,35 +93,39 @@ namespace UF2Practica1
 
 		public void ProcessarCua()
 		{
-			// Llegirem la cua extreient l'element
-			// cridem al mètode ProcesarCompra passant-li el client
+            // Llegirem la cua extreient l'element
+            // cridem al mètode ProcesarCompra passant-li el client
+            while (!MainClass.cua.IsEmpty)
+            {
+                var client = new Client();
 
+                bool funciona = MainClass.cua.TryDequeue(out client);
 
+                if (funciona)
+                {
 
-		}
+                    ProcesarCompra(client);
 
+                }
+            }
+        }
 
 		private void ProcesarCompra(Client client)
 		{
 
-			Console.WriteLine("La caixera " + this.idCaixera + " comença amb el client " + client.nom + " que té " + client.carretCompra + " productes");
+			Console.WriteLine("El caixer " + this.idCaixer + " comença amb el client " + client.nom + " que té " + client.carretCompra + " productes");
 
 			for (int i = 0; i < client.carretCompra; i++)
 			{
 				this.ProcessaProducte();
-
 			}
-
-			Console.WriteLine(">>>>>> La caixera " + this.idCaixera + " ha acabat amb el client " + client.nom);
+			Console.WriteLine("<!!!> El caixer " + this.idCaixer + " ha acabat amb el  " + client.nom+" <!!!!!>");
 		}
-
-
 		private void ProcessaProducte()
 		{
 			Thread.Sleep(TimeSpan.FromSeconds(1));
 		}
 	}
-
 
 	#endregion
 
